@@ -75,6 +75,5 @@ for i, call in enumerate(calls):
     alpha = (len(calls) - i)/(1.0*len(calls)) #more transparency for older qsos
     plt.plot(xs[1], ys[1], 'o', color=color, alpha=alpha)
 
+plt.savefig('map.png', bbox_inches='tight', dpi=300)
 
-
-plt.show()
