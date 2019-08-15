@@ -20,7 +20,7 @@ for res in results:
         latitude = res.findall("fjas:lat", ns)[0].text
     except:
         continue
-    prefixes[prefix] = (latitude, longitude)
+    prefixes[prefix] = [latitude, longitude]
 
 #get possible prefix lengths
 import numpy as np
@@ -51,20 +51,27 @@ for i, call in enumerate(calls):
             break
         except:
             continue
-    print(call, latlon)
 
-    progr = (len(calls) - i)/(1.0*len(calls))
-    print(progr)
     color = 'black'
-    xs = [qth_coord[1], float(latlon[1])]
-    ys = [qth_coord[0], float(latlon[0])]
+
+    latlon = np.array(latlon).astype(float)
+
+    #add some random offset to the coordinates in order to see
+    #the difference of overlapping coordinates
+    latlon = np.random.multivariate_normal(latlon, np.eye(2,2)*0.05)
+
+    xs = [qth_coord[1], latlon[1]]
+    ys = [qth_coord[0], latlon[0]]
     if i == 0:
+        #plot great circle from LA1K to most recent qso
         color='red'
         plt.plot(xs, ys, color=color, transform=ccrs.Geodetic())
+        plt.text(xs[1], ys[1], call)
     else:
         color='black'
 
-    plt.plot(xs[1], ys[1], 'o', color=color, alpha=progr)
+    alpha = (len(calls) - i)/(1.0*len(calls)) #more transparency for older qsos
+    plt.plot(xs[1], ys[1], 'o', color=color, alpha=alpha)
 
 
 
