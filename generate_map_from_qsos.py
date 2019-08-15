@@ -63,13 +63,15 @@ for i, call in enumerate(calls):
     xs = [qth_coord[1], latlon[1]]
     ys = [qth_coord[0], latlon[0]]
     if i == 0:
-        #plot great circle from LA1K to most recent qso
+        #plot great circle from LA1K to most recent qso, make most recent QSO red
         color='red'
         plt.plot(xs, ys, color=color, transform=ccrs.Geodetic())
         plt.text(xs[1], ys[1], call)
     else:
+        #all other QSOs: black
         color='black'
 
+    #plot dot for the given QSO
     alpha = (len(calls) - i)/(1.0*len(calls)) #more transparency for older qsos
     plt.plot(xs[1], ys[1], 'o', color=color, alpha=alpha)
 
