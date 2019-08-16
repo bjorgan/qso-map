@@ -41,7 +41,7 @@ for res in results:
         latitude = res.findall("fjas:lat", ns)[0].text
     except:
         continue
-    prefixes[prefix] = (latitude, longitude)
+    prefixes[prefix] = [latitude, longitude]
 
 #get possible prefix lengths
 prefix_lens = np.array([len(prefix) for prefix in list(prefixes)])
@@ -73,17 +73,24 @@ for i, call in enumerate(calls):
             break
         except:
             continue
-    print(call, latlon)
 
     color = 'black'
-    xs = [qth_coord[1], float(latlon[1])]
-    ys = [qth_coord[0], float(latlon[0])]
+
+    latlon = np.array(latlon).astype(float)
+
+    #add some random offset to the coordinates in order
+    #to see the difference of overlapping coordinates
+    latlon = np.random.multivariate_normal(latlon, np.eye(2,2)*0.05)
+
+    xs = [qth_coord[1], latlon[1]]
+    ys = [qth_coord[0], latlon[0]]
     if i == 0:
+        #plot great circle from LA1K to most recent QSO
         color='red'
         plt.plot(xs, ys, color=color, transform=ccrs.Geodetic())
     else:
+        #plot dot for all other QSOs
         color='black'
-        
         plt.plot(xs[1], ys[1], 'o', color=colors[operators[i]], label=operators[i])
 
 # Add legend with labels (for each unique operator)
