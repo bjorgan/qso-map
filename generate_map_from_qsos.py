@@ -1,5 +1,14 @@
 import sqlite3
 import argparse
+import xml.etree.cElementTree as ET
+import numpy as np
+import cartopy
+import cartopy.feature as cpf
+import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
+import json
+import random
+import matplotlib.cm
 
 #parse arguments
 parser = argparse.ArgumentParser(description='Generate map over last N QSOs from database on hybelpc.')
@@ -16,10 +25,11 @@ db = sqlite3.connect(args.db_file)
 c = db.cursor()
 c.execute('''SELECT call FROM current_qsos ORDER BY timestamp DESC LIMIT 50''')
 calls = [entry[0] for entry in c.fetchall()]
+c.execute('''SELECT operator FROM current_qsos ORDER BY timestamp DESC LIMIT 50''')
+operators = [entry[0] for entry in c.fetchall()]
 
 #get list over prefixes and lat/lon from clublog xml file
 #obtained from https://clublog.org/cty.php?api=API_KEY
-import xml.etree.cElementTree as ET
 tree = ET.parse(args.prefix_xml_file)
 ns = {'fjas': 'https://clublog.org/cty/v1.2'}
 results = tree.findall("./fjas:prefixes/fjas:prefix", ns)
@@ -31,25 +41,26 @@ for res in results:
         latitude = res.findall("fjas:lat", ns)[0].text
     except:
         continue
-    prefixes[prefix] = [latitude, longitude]
+    prefixes[prefix] = (latitude, longitude)
 
 #get possible prefix lengths
-import numpy as np
 prefix_lens = np.array([len(prefix) for prefix in list(prefixes)])
 max_prefix_length = np.max(prefix_lens)
 min_prefix_length = np.min(prefix_lens)
 
 #create map
-import cartopy
-import cartopy.feature as cpf
-import cartopy.crs as ccrs
-
-import matplotlib.pyplot as plt
 ax = plt.figure().gca(projection=cartopy.crs.PlateCarree())
 ax.add_feature(cpf.LAND)
 #ax.set_global()
 qth_coord = [63.42, 10.39]
-plt.plot(qth_coord[1], qth_coord[0], 'o', color='black')
+plt.plot(qth_coord[1], qth_coord[0], 'o', color='black', label="LA1K")
+
+# Assign colors based on tab10 color map. Pseudo-consistent colors achieved with enumeration
+colors = {}
+cmap = matplotlib.cm.get_cmap('tab10')
+for i, op in enumerate(np.sort(np.unique(operators))):
+    colors[op] = cmap(i)
+
 
 #match the QSO calls against prefix database, find latlon, plot in map
 for i, call in enumerate(calls):
@@ -62,29 +73,25 @@ for i, call in enumerate(calls):
             break
         except:
             continue
+    print(call, latlon)
 
     color = 'black'
-
-    latlon = np.array(latlon).astype(float)
-
-    #add some random offset to the coordinates in order to see
-    #the difference of overlapping coordinates
-    latlon = np.random.multivariate_normal(latlon, np.eye(2,2)*0.05)
-
-    xs = [qth_coord[1], latlon[1]]
-    ys = [qth_coord[0], latlon[0]]
+    xs = [qth_coord[1], float(latlon[1])]
+    ys = [qth_coord[0], float(latlon[0])]
     if i == 0:
-        #plot great circle from LA1K to most recent qso, make most recent QSO red
         color='red'
         plt.plot(xs, ys, color=color, transform=ccrs.Geodetic())
-        plt.text(xs[1], ys[1], call)
     else:
-        #all other QSOs: black
         color='black'
+        
+        plt.plot(xs[1], ys[1], 'o', color=colors[operators[i]], label=operators[i])
 
-    #plot dot for the given QSO
-    alpha = (len(calls) - i)/(1.0*len(calls)) #more transparency for older qsos
-    plt.plot(xs[1], ys[1], 'o', color=color, alpha=alpha)
+# Add legend with labels (for each unique operator)
+handles, labels = plt.gca().get_legend_handles_labels()
+_, indices = np.unique(labels, return_index=True)
+handles = np.array(handles)[indices]
+labels = np.array(labels)[indices]
+plt.legend(handles, labels)
+plt.show()
 
 plt.savefig(args.output_filename, bbox_inches='tight', dpi=300)
-
