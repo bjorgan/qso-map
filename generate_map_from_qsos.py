@@ -82,16 +82,19 @@ for i, call in enumerate(calls):
     #to see the difference of overlapping coordinates
     latlon = np.random.multivariate_normal(latlon, np.eye(2,2)*0.05)
 
+    #path from QTH to new QSO
     xs = [qth_coord[1], latlon[1]]
     ys = [qth_coord[0], latlon[0]]
+
+    #operator color
+    color = colors[operators[i]]
+
     if i == 0:
         #plot great circle from LA1K to most recent QSO
-        color='red'
         plt.plot(xs, ys, color=color, transform=ccrs.Geodetic())
-    else:
-        #plot dot for all other QSOs
-        color='black'
-        plt.plot(xs[1], ys[1], 'o', color=colors[operators[i]], label=operators[i])
+
+    #plot dot for all other QSOs with unique operator coloring
+    plt.plot(xs[1], ys[1], 'o', color=colors[operators[i]], label=operators[i])
 
 # Add legend with labels (for each unique operator)
 handles, labels = plt.gca().get_legend_handles_labels()
