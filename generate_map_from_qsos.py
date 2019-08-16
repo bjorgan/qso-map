@@ -102,6 +102,5 @@ _, indices = np.unique(labels, return_index=True)
 handles = np.array(handles)[indices]
 labels = np.array(labels)[indices]
 plt.legend(handles, labels)
-plt.show()
 
 plt.savefig(args.output_filename, bbox_inches='tight', dpi=300)
