@@ -1,7 +1,18 @@
 import sqlite3
+import argparse
+
+#parse arguments
+parser = argparse.ArgumentParser(description='Generate map over last N QSOs from database on hybelpc.')
+parser.add_argument('--db-file', metavar='db_file', type=str, default='qso_database.sqlite',
+        help='Path to sqlite QSO database.')
+parser.add_argument('--prefix-xml-file', metavar='prefix_xml_file', type=str, default='cty.xml',
+        help='Path to XML file containing prefix-country mapping from ClubLog.')
+parser.add_argument('--output-filename', metavar='output_filename', type=str, default='map.png',
+        help='Output filename.')
+args = parser.parse_args()
 
 #get last 50 QSOs from sqlite database
-db = sqlite3.connect('qso_database.sqlite')
+db = sqlite3.connect(args.db_file)
 c = db.cursor()
 c.execute('''SELECT call FROM current_qsos ORDER BY timestamp DESC LIMIT 50''')
 calls = [entry[0] for entry in c.fetchall()]
@@ -9,7 +20,7 @@ calls = [entry[0] for entry in c.fetchall()]
 #get list over prefixes and lat/lon from clublog xml file
 #obtained from https://clublog.org/cty.php?api=API_KEY
 import xml.etree.cElementTree as ET
-tree = ET.parse('cty.xml')
+tree = ET.parse(args.prefix_xml_file)
 ns = {'fjas': 'https://clublog.org/cty/v1.2'}
 results = tree.findall("./fjas:prefixes/fjas:prefix", ns)
 prefixes = {}
@@ -75,5 +86,5 @@ for i, call in enumerate(calls):
     alpha = (len(calls) - i)/(1.0*len(calls)) #more transparency for older qsos
     plt.plot(xs[1], ys[1], 'o', color=color, alpha=alpha)
 
-plt.savefig('map.png', bbox_inches='tight', dpi=300)
+plt.savefig(args.output_filename, bbox_inches='tight', dpi=300)
 
